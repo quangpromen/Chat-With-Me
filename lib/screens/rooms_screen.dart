@@ -24,7 +24,23 @@ class RoomsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           if (isHosting)
-            const ConnectionBanner(label: 'You are hosting this network'),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const ConnectionBanner(label: 'You are hosting this network'),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.dashboard),
+                  label: const Text('Host Dashboard'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => context.push('/host'),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           if (rooms.isEmpty)
             Card(
               elevation: 1,

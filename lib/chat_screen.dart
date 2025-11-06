@@ -174,9 +174,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                   const SizedBox(width: 8),
                   FloatingActionButton(
-                    onPressed: _sendMessage,
-                    child: const Icon(Icons.send), // child argument last
+                    onPressed: _sendMessage, // child argument last
                     mini: true,
+                    child: const Icon(Icons.send),
                   ),
                 ],
               ),

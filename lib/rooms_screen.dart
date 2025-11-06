@@ -126,9 +126,9 @@ class _RoomsScreenState extends ConsumerState<RoomsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {}, // placeholder: create new room
-        child: const Icon(Icons.add), // child argument last
-        tooltip: 'New Room',
+        onPressed: () {}, // child argument last
+        tooltip: 'New Room', // placeholder: create new room
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -373,13 +373,13 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   );
-                },
-                child: const Text('Open actions'), // child argument last
+                }, // child argument last
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child: const Text('Open actions'),
               ),
             ],
           ),

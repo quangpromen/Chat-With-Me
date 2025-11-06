@@ -122,6 +122,45 @@ class AppState {
 }
 
 class AppNotifier extends Notifier<AppState> {
+  Future<void> removeMemberFromRoom(String roomId, String member) async {
+    final roomIndex = state.rooms.indexWhere((r) => r.id == roomId);
+    if (roomIndex == -1) return;
+    final oldRoom = state.rooms[roomIndex];
+    final newMembers = List<String>.from(oldRoom.members)..remove(member);
+    final updatedRoom = Room(
+      id: oldRoom.id,
+      name: oldRoom.name,
+      createdAt: oldRoom.createdAt,
+      hostId: oldRoom.hostId,
+      members: newMembers,
+    );
+    final updatedRooms = List<Room>.from(state.rooms)
+      ..[roomIndex] = updatedRoom;
+    state = state.copyWith(rooms: updatedRooms);
+    final database = ref.read(databaseServiceProvider);
+    if (database.isAvailable) {
+      await database.saveRoom(updatedRoom);
+    }
+    _syncServerState();
+  }
+
+  Future<void> deleteRoom(String roomId) async {
+    final updatedRooms = List<Room>.from(state.rooms)
+      ..removeWhere((r) => r.id == roomId);
+    final updatedMessages = Map<String, List<ChatMessage>>.from(
+      state.messagesByRoom,
+    )..remove(roomId);
+    state = state.copyWith(
+      rooms: updatedRooms,
+      messagesByRoom: updatedMessages,
+    );
+    final database = ref.read(databaseServiceProvider);
+    if (database.isAvailable) {
+      await database.deleteRoom(roomId);
+    }
+    _syncServerState();
+  }
+
   StreamSubscription<List<Peer>>? _peerSubscription;
   StreamSubscription<LanHostEvent>? _serverSubscription;
   StreamSubscription<FileTransferUpdate>? _fileTransferSubscription;
