@@ -33,7 +33,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     }
     final room = ref.read(appStateProvider.notifier).createRoom(name);
     if (room != null) {
-      context.go('/chat/${room.id}');
+      context.push('/chat/${room.id}');
     }
   }
 

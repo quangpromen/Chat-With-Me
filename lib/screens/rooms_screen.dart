@@ -19,7 +19,7 @@ class RoomsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Rooms')),
+      appBar: AppBar(title: const Text('Rooms'), leading: const BackButton()),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -66,10 +66,10 @@ class RoomsScreen extends ConsumerWidget {
                   ),
                 ),
                 trailing: FilledButton(
-                  onPressed: () => context.go('/chat/${room.id}'),
+                  onPressed: () => context.push('/chat/${room.id}'),
                   child: const Text('Join'),
                 ),
-                onTap: () => context.go('/chat/${room.id}'),
+                onTap: () => context.push('/chat/${room.id}'),
               ),
             ),
           const SizedBox(height: 24),

@@ -11,7 +11,7 @@ class PeersScreen extends StatelessWidget {
       {'id': 'peer3', 'name': 'Charlie'},
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Peers')),
+      appBar: AppBar(title: const Text('Peers'), leading: const BackButton()),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

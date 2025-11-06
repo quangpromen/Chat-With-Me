@@ -16,7 +16,10 @@ class PermissionsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Permissions')),
+      appBar: AppBar(
+        title: const Text('Permissions'),
+        leading: const BackButton(),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -81,7 +84,7 @@ class PermissionsScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: hasAll ? () => context.go('/profile-setup') : null,
+            onPressed: hasAll ? () => context.push('/profile-setup') : null,
           ),
         ],
       ),

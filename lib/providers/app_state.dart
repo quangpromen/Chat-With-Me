@@ -10,7 +10,6 @@ import '../data/models/file_transfer.dart';
 import '../data/models/peer.dart';
 import '../data/models/room.dart';
 import '../data/models/user_profile.dart';
-import '../data/models/message.dart';
 import '../services/lan_discovery_service.dart';
 import '../services/lan_chat_server.dart';
 import 'package:chat_offline/core/file_service.dart';
@@ -142,24 +141,25 @@ class AppNotifier extends Notifier<AppState> {
   Future<void> _loadFromDatabase() async {
     final database = ref.read(databaseServiceProvider);
     await database.initialize();
-    
     if (!database.isAvailable) {
       return;
     }
-
     try {
+      // Load permissions
+      final loadedPerms = database.loadPermissions();
+      if (loadedPerms.isNotEmpty) {
+        state = state.copyWith(grantedPermissions: loadedPerms);
+      }
       // Load rooms
       final rooms = await database.loadAllRooms();
       if (rooms.isNotEmpty) {
         state = state.copyWith(rooms: rooms);
       }
-
       // Load peers
       final peers = await database.loadAllPeers();
       if (peers.isNotEmpty) {
         state = state.copyWith(peers: peers);
       }
-
       // Load messages for each room
       final messagesByRoom = <String, List<ChatMessage>>{};
       for (final room in rooms) {
@@ -413,6 +413,11 @@ class AppNotifier extends Notifier<AppState> {
       updated.remove(permission);
     }
     state = state.copyWith(grantedPermissions: updated);
+    // Save permissions to Hive
+    final database = ref.read(databaseServiceProvider);
+    if (database.isAvailable) {
+      unawaited(database.savePermissions(updated));
+    }
 
     if (permission == AppPermission.network) {
       if (granted) {

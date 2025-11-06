@@ -10,7 +10,10 @@ class KeyVerificationScreen extends StatelessWidget {
       {'peer': 'Bob', 'verified': false},
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Key Verification')),
+      appBar: AppBar(
+        title: const Text('Key Verification'),
+        leading: const BackButton(),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

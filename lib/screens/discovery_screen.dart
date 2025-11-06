@@ -65,7 +65,7 @@ class DiscoveryScreen extends ConsumerWidget {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: peer.isHosting
-                        ? () => context.go('/rooms')
+                        ? () => context.push('/rooms')
                         : null,
                     child: const Text('Connect'),
                   ),
@@ -90,12 +90,12 @@ class DiscoveryScreen extends ConsumerWidget {
                 ? null
                 : () {
                     notifier.startHosting();
-                    context.go('/rooms');
+                    context.push('/rooms');
                   },
           ),
           TextButton(
             onPressed: () {
-              context.go('/manual-host');
+              context.push('/manual-host');
             },
             child: const Text('Enter Host IP manually'),
           ),

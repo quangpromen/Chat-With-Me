@@ -10,7 +10,10 @@ class InviteScreen extends StatelessWidget {
       {'id': 'peer2', 'name': 'Bob'},
     ];
     return Scaffold(
-      appBar: AppBar(title: const Text('Invite Peers')),
+      appBar: AppBar(
+        title: const Text('Invite Peers'),
+        leading: const BackButton(),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

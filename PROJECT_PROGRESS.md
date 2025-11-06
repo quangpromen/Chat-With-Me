@@ -1,3 +1,11 @@
+## [2025-11-06] Update progress
+
+- Hoàn thiện logic quản lý host/room: bật/tắt host, đặt/chỉnh sửa password, kiểm soát thành viên, logs, chia sẻ QR, xóa/kick/ban thành viên, quản lý room (tạo/xóa/chia sẻ QR).
+- Tích hợp hiển thị QR code cho host và room bằng qr_flutter, có thể quét để tham gia.
+- Đồng bộ logic AppBar/BackButton trên tất cả các màn hình chính, đảm bảo có nút back khi có thể quay lại.
+- UI/UX: kiểm tra và đồng bộ Material 3, màu sắc hài hòa, giao diện hiện đại, các thành phần đồng nhất.
+- Đã kiểm tra và chạy lại test, đảm bảo pass 100%.
+- Hướng dẫn test nhanh: `flutter test` hoặc chạy app, kiểm tra các chức năng host/room, QR, navigation.
 # Project Progress Log
 
 _Last updated: 2025-11-06 (UTC)_
@@ -18,6 +26,15 @@ _Last updated: 2025-11-06 (UTC)_
   - Chạy `flutter clean && flutter pub get && build_runner build --delete-conflicting-outputs` thành công
   - **APK build thành công** và app chạy trên Android emulator
   - Flutter analyze: 0 errors, chỉ 18 infos/warnings (không blocking)
+
+## [2025-11-06] UI/UX & Navigation Updates
+- Thiết kế lại giao diện Host Dashboard hiện đại, thân thiện, nhiều màu sắc, quản lý host, thành viên, room, logs.
+- Thêm nút back (BackButton) cho tất cả các màn hình chính (chat, room, settings, profile, profile setup, permissions, onboarding, invite, key verification, file transfer, discovery, diagnostics, create room) để người dùng luôn có thể quay lại màn hình trước.
+- Sửa các AppBar để ưu tiên hiển thị nút back khi có thể quay lại, kể cả khi có avatar hoặc icon ở leading.
+- Chuẩn hóa navigation cho trải nghiệm nhất quán trên Android/iOS.
+- Đã kiểm tra và xác nhận không có lỗi build, chỉ còn một số cảnh báo nhỏ về style/deprecated (sẽ xử lý sau).
+
+> Ghi chú: Các thay đổi này giúp app thân thiện hơn, dễ sử dụng, phù hợp với thói quen người dùng di động hiện đại.
 
 ## Đang thực hiện / Còn thiếu
 - ✅ App đang chạy trên Android emulator - verify UI rendering và basic functionality

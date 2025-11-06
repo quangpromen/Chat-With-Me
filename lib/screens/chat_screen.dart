@@ -57,7 +57,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
     return Scaffold(
-      appBar: AppBar(title: Text(room?.name ?? 'Chat')),
+      appBar: AppBar(
+        title: Text(room?.name ?? 'Chat'),
+        leading: const BackButton(),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -85,7 +88,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     decoration: InputDecoration(
                       hintText: 'Type a message',
                       filled: true,
-                      fillColor: Theme.of(context).colorScheme.surfaceVariant,
+                      fillColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
@@ -126,7 +131,7 @@ class _MessageBubble extends StatelessWidget {
     final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
     final bubbleColor = isMe
         ? Theme.of(context).colorScheme.primaryContainer
-        : Theme.of(context).colorScheme.surfaceVariant;
+        : Theme.of(context).colorScheme.surfaceContainerHighest;
     final textColor = isMe
         ? Theme.of(context).colorScheme.onPrimaryContainer
         : Theme.of(context).colorScheme.onSurfaceVariant;

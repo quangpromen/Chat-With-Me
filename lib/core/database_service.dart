@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../data/models/message.dart';
@@ -8,8 +7,10 @@ import '../data/models/peer_db.dart';
 import '../data/models/room_db.dart';
 import '../data/models/peer.dart';
 import '../data/models/room.dart';
+import '../providers/app_state.dart';
 
 class DatabaseService {
+  late Box _settingsBox;
   late Box<Message> _messagesBox;
   late Box<PeerDb> _peersBox;
   late Box<RoomDb> _roomsBox;
@@ -41,12 +42,48 @@ class DatabaseService {
       _messagesBox = await Hive.openBox<Message>('messages');
       _peersBox = await Hive.openBox<PeerDb>('peers');
       _roomsBox = await Hive.openBox<RoomDb>('rooms');
+      _settingsBox = await Hive.openBox('settings');
 
       _initialized = true;
     } catch (err) {
       if (kDebugMode) {
         debugPrint('Failed to initialize Hive database: $err');
       }
+    }
+  }
+
+  // Permissions persistence
+  Future<void> savePermissions(Set permissions) async {
+    if (!_initialized) return;
+    try {
+      await _settingsBox.put(
+        'permissions',
+        permissions.map((e) => e.toString()).toList(),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error saving permissions: $e');
+      }
+    }
+  }
+
+  Set<AppPermission> loadPermissions() {
+    if (!_initialized) return <AppPermission>{};
+    try {
+      final list = _settingsBox.get('permissions', defaultValue: <dynamic>[]);
+      return Set<AppPermission>.from(
+        list.map((e) {
+          final name = e.toString().split('.').last;
+          return AppPermission.values.firstWhere(
+            (p) => p.toString().split('.').last == name,
+          );
+        }),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error loading permissions: $e');
+      }
+      return <AppPermission>{};
     }
   }
 

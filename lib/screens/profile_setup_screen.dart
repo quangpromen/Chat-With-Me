@@ -33,7 +33,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     final isValid = _controller.text.trim().isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile Setup')),
+      appBar: AppBar(
+        title: const Text('Profile Setup'),
+        leading: const BackButton(),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -83,7 +86,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             onPressed: isValid
                 ? () {
                     notifier.saveProfile(_controller.text.trim());
-                    context.go('/discovery');
+                    context.push('/discovery');
                   }
                 : null,
           ),

@@ -95,7 +95,7 @@ class OnboardingScreen extends ConsumerWidget {
                   ),
                   onPressed: () {
                     ref.read(appStateProvider.notifier).completeOnboarding();
-                    context.go('/permissions');
+                    context.push('/permissions');
                   },
                 ),
               ),

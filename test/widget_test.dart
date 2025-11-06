@@ -15,16 +15,9 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const LanChatApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // The onboarding screen should be shown first (check for a unique text or widget)
+    expect(find.text('Offline LAN Chat'), findsOneWidget);
+    // Optionally, check for the 'Get Started' button
+    expect(find.text('Get Started'), findsOneWidget);
   });
 }

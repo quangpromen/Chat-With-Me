@@ -101,19 +101,19 @@ class _ManualHostScreenState extends ConsumerState<ManualHostScreen> {
     try {
       await signaling.connectToHost(ip, port: port);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connected to $entry')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Connected to $entry')));
     } on FormatException catch (err) {
       setState(() => _errorMessage = err.message);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(err.message)));
     } catch (err) {
       setState(() => _errorMessage = 'Unable to connect to $entry');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connection failed: $err')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Connection failed: $err')));
     } finally {
       if (mounted) {
         setState(() => _connecting = false);
@@ -124,7 +124,10 @@ class _ManualHostScreenState extends ConsumerState<ManualHostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Enter Host Manually')),
+      appBar: AppBar(
+        title: const Text('Enter Host Manually'),
+        leading: const BackButton(),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
