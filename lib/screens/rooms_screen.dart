@@ -4,8 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/app_state.dart';
 import '../widgets/common.dart';
+import 'room_settings_screen.dart';
 
 class RoomsScreen extends ConsumerWidget {
+  void _ensureDiscoveryOrHost(WidgetRef ref, bool isHosting) {
+    final notifier = ref.read(appStateProvider.notifier);
+    if (isHosting) {
+      notifier.ensureHostingServer();
+    } else {
+      notifier.ensureDiscoveryRunning();
+    }
+  }
+
   const RoomsScreen({super.key});
 
   @override
@@ -17,85 +27,244 @@ class RoomsScreen extends ConsumerWidget {
     final messageLookup = ref.watch(
       appStateProvider.select((state) => state.messagesByRoom),
     );
+    final theme = Theme.of(context);
+
+    // Ensure discovery/server is running when entering RoomsScreen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureDiscoveryOrHost(ref, isHosting);
+    });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Rooms'), leading: const BackButton()),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (isHosting)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const ConnectionBanner(label: 'You are hosting this network'),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.dashboard),
-                  label: const Text('Host Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => context.push('/host'),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          if (rooms.isEmpty)
-            Card(
-              elevation: 1,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'No rooms yet',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+      appBar: AppBar(
+        title: const Text('Rooms'),
+        leading: const BackButton(),
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 0.5,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Profile',
+            onPressed: () => context.push('/profile'),
+          ),
+        ],
+      ),
+      body: Container(
+        color: theme.colorScheme.surface,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (isHosting)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const ConnectionBanner(label: 'You are hosting this network'),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.dashboard_customize_rounded),
+                    label: const Text('Host Dashboard'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 2,
                     ),
-                    SizedBox(height: 8),
-                    Text('Create a room to start chatting on this network.'),
-                  ],
-                ),
+                    onPressed: () => context.push('/host'),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-            ),
-          for (final room in rooms)
-            Card(
-              elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.indigo[100],
-                  child: Text(
-                    room.name.isNotEmpty ? room.name[0].toUpperCase() : 'R',
-                    style: const TextStyle(color: Colors.indigo),
+            if (rooms.isEmpty)
+              Card(
+                elevation: 0,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                color: theme.colorScheme.surfaceVariant,
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.meeting_room_outlined,
+                        size: 48,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No rooms yet',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Create a room to start chatting on this network.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
                 ),
-                title: Text(
-                  room.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: _RoomSubtitle(
-                  lastMessage: _lastMessagePreview(
-                    messageLookup[room.id] ?? const [],
+              ),
+            for (final room in rooms)
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: Card(
+                  color: theme.colorScheme.surfaceVariant,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: Text(
+                        room.name.isNotEmpty ? room.name[0].toUpperCase() : 'R',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Row(
+                      children: [
+                        Text(
+                          room.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        MemberCountBadge(count: room.members.length),
+                      ],
+                    ),
+                    subtitle: RoomSubtitle(
+                      lastMessage: lastMessagePreview(
+                        messageLookup[room.id] ?? const [],
+                      ),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.settings),
+                      tooltip: 'Room Settings',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => RoomSettingsScreen(room: room),
+                          ),
+                        );
+                      },
+                    ),
+                    onTap: () => context.push('/chat/${room.id}'),
                   ),
                 ),
-                trailing: FilledButton(
-                  onPressed: () => context.push('/chat/${room.id}'),
-                  child: const Text('Join'),
+              ),
+            const SizedBox(height: 32),
+            Center(
+              child: FilledButton.icon(
+                icon: const Icon(Icons.add_box_rounded),
+                label: const Text('Create Room'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  minimumSize: const Size(180, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 3,
+                  textStyle: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                onTap: () => context.push('/chat/${room.id}'),
+                onPressed: () => context.push('/room-create'),
               ),
             ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('Create Room'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MemberCountBadge extends StatelessWidget {
+  final int count;
+  const MemberCountBadge({required this.count, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.group, size: 14, color: theme.colorScheme.onPrimary),
+          const SizedBox(width: 2),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimary,
             ),
-            onPressed: () => context.push('/room-create'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RoomSubtitle extends StatelessWidget {
+  final String? lastMessage;
+  const RoomSubtitle({required this.lastMessage, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (lastMessage == null) {
+      return const Text('No messages yet');
+    }
+    return Text(lastMessage!, maxLines: 1, overflow: TextOverflow.ellipsis);
+  }
+}
+
+String? lastMessagePreview(List<ChatMessage> messages) {
+  if (messages.isEmpty) {
+    return null;
+  }
+  final last = messages.last;
+  return '${last.senderName}: ${last.text}';
+}
+
+// --- Custom badge and subtitle widgets ---
+class _MemberCountBadge extends StatelessWidget {
+  final int count;
+  const _MemberCountBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.group, size: 14, color: theme.colorScheme.onPrimary),
+          const SizedBox(width: 2),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimary,
+            ),
           ),
         ],
       ),
@@ -115,12 +284,4 @@ class _RoomSubtitle extends StatelessWidget {
     }
     return Text(lastMessage!, maxLines: 1, overflow: TextOverflow.ellipsis);
   }
-}
-
-String? _lastMessagePreview(List<ChatMessage> messages) {
-  if (messages.isEmpty) {
-    return null;
-  }
-  final last = messages.last;
-  return '${last.senderName}: ${last.text}';
 }

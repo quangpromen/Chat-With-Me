@@ -277,7 +277,7 @@ class AppNotifier extends Notifier<AppState> {
   bool get _hasNetworkPermission =>
       state.grantedPermissions.contains(AppPermission.network);
 
-  Future<void> _ensureDiscoveryRunning() async {
+  Future<void> ensureDiscoveryRunning() async {
     if (!_hasNetworkPermission) {
       return;
     }
@@ -331,7 +331,7 @@ class AppNotifier extends Notifier<AppState> {
     }
   }
 
-  Future<void> _ensureHostingServer() async {
+  Future<void> ensureHostingServer() async {
     if (!state.isHosting || !_hasNetworkPermission) {
       return;
     }
@@ -460,9 +460,9 @@ class AppNotifier extends Notifier<AppState> {
 
     if (permission == AppPermission.network) {
       if (granted) {
-        unawaited(_ensureDiscoveryRunning());
+        unawaited(ensureDiscoveryRunning());
         if (state.isHosting) {
-          unawaited(_ensureHostingServer());
+          unawaited(ensureHostingServer());
         }
       } else {
         _tearDownDiscovery();
@@ -493,9 +493,9 @@ class AppNotifier extends Notifier<AppState> {
     ref
         .read(lanDiscoveryServiceProvider)
         .updateIdentity(displayName: profile.displayName);
-    unawaited(_ensureDiscoveryRunning());
+    unawaited(ensureDiscoveryRunning());
     if (state.isHosting) {
-      unawaited(_ensureHostingServer());
+      unawaited(ensureHostingServer());
     }
   }
 
@@ -506,7 +506,7 @@ class AppNotifier extends Notifier<AppState> {
     if (!state.isHosting) {
       state = state.copyWith(isHosting: true);
     }
-    unawaited(_ensureHostingServer());
+    unawaited(ensureHostingServer());
   }
 
   void stopHosting() {
@@ -516,7 +516,12 @@ class AppNotifier extends Notifier<AppState> {
     unawaited(_tearDownServer());
   }
 
-  Room? createRoom(String name, {String? createdByDisplayName}) {
+  Room? createRoom(
+    String name, {
+    String? createdByDisplayName,
+    String? password,
+    RoomAccessMethod accessMethod = RoomAccessMethod.open,
+  }) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) {
       return null;
@@ -534,6 +539,8 @@ class AppNotifier extends Notifier<AppState> {
       createdAt: DateTime.now(),
       hostId: state.profile?.id,
       members: members.toList(growable: false),
+      password: password,
+      accessMethod: accessMethod,
     );
 
     final updatedRooms = List<Room>.from(state.rooms)..add(newRoom);

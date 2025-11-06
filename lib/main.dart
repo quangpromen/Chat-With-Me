@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/onboarding_screen.dart';
+import 'providers/app_state.dart';
 import 'screens/permissions_screen.dart';
 import 'screens/profile_setup_screen.dart';
 import 'screens/discovery_screen.dart';
 import 'screens/rooms_screen.dart';
-import 'screens/create_room_screen.dart';
+import 'screens/room_create_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/peers_screen.dart';
 import 'screens/settings_screen.dart';
@@ -39,7 +40,7 @@ final _router = GoRouter(
     ),
     GoRoute(path: '/discovery', builder: (_, __) => const DiscoveryScreen()),
     GoRoute(path: '/rooms', builder: (_, __) => const RoomsScreen()),
-    GoRoute(path: '/room-create', builder: (_, __) => const CreateRoomScreen()),
+    GoRoute(path: '/room-create', builder: (_, __) => const RoomCreateScreen()),
     GoRoute(path: '/manual-host', builder: (_, __) => const ManualHostScreen()),
     GoRoute(
       path: '/chat/:roomId',
@@ -77,6 +78,31 @@ final _router = GoRouter(
       builder: (_, __) => const DiagnosticsScreen(),
     ),
   ],
+  redirect: (context, state) {
+    // Use Riverpod to read the app state
+    final container = ProviderScope.containerOf(context, listen: false);
+    final appState = container.read(appStateProvider);
+
+    // If onboarding not complete, always go to onboarding
+    if (!appState.onboardingComplete) {
+      return state.fullPath == '/onboarding' ? null : '/onboarding';
+    }
+    // If not all permissions granted, go to permissions
+    if (!appState.hasAllPermissions) {
+      return state.fullPath == '/permissions' ? null : '/permissions';
+    }
+    // If profile not set, go to profile setup
+    if (appState.profile == null) {
+      return state.fullPath == '/profile-setup' ? null : '/profile-setup';
+    }
+    // If already completed all, skip onboarding flow
+    if (state.fullPath == '/onboarding' ||
+        state.fullPath == '/permissions' ||
+        state.fullPath == '/profile-setup') {
+      return '/discovery';
+    }
+    return null;
+  },
 );
 
 class LanChatApp extends StatelessWidget {
@@ -86,6 +112,7 @@ class LanChatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'LanChat',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),

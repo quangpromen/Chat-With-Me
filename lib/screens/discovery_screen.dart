@@ -65,7 +65,11 @@ class DiscoveryScreen extends ConsumerWidget {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: peer.isHosting
-                        ? () => context.push('/rooms')
+                        ? () async {
+                            // Ensure discovery is running before navigating
+                            await notifier.ensureDiscoveryRunning();
+                            context.push('/rooms');
+                          }
                         : null,
                     child: const Text('Connect'),
                   ),
@@ -88,8 +92,10 @@ class DiscoveryScreen extends ConsumerWidget {
             ),
             onPressed: appState.isHosting
                 ? null
-                : () {
+                : () async {
                     notifier.startHosting();
+                    // Ensure server/discovery is running before navigating
+                    await notifier.ensureHostingServer();
                     context.push('/rooms');
                   },
           ),
@@ -98,6 +104,25 @@ class DiscoveryScreen extends ConsumerWidget {
               context.push('/manual-host');
             },
             child: const Text('Enter Host IP manually'),
+          ),
+          const SizedBox(height: 32),
+          FilledButton.icon(
+            icon: const Icon(Icons.meeting_room_outlined),
+            label: const Text('Enter chat rooms'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(48),
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            onPressed: () async {
+              if (appState.isHosting) {
+                await notifier.ensureHostingServer();
+              } else {
+                await notifier.ensureDiscoveryRunning();
+              }
+              context.push('/rooms');
+            },
           ),
         ],
       ),

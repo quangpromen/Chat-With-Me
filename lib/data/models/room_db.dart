@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'room.dart';
 part 'room_db.g.dart';
 
 @HiveType(typeId: 2)
@@ -18,6 +19,12 @@ class RoomDb {
   @HiveField(4)
   late List<String> members;
 
+  @HiveField(5)
+  String? password;
+
+  @HiveField(6)
+  RoomAccessMethod accessMethod = RoomAccessMethod.open;
+
   RoomDb();
 
   RoomDb.fromRoom({
@@ -26,9 +33,13 @@ class RoomDb {
     required DateTime createdAt,
     String? hostId,
     List<String>? members,
+    String? password,
+    RoomAccessMethod accessMethod = RoomAccessMethod.open,
   }) : roomId = id,
        name = name,
        createdAt = createdAt,
        hostId = hostId,
-       members = members ?? <String>[];
+       members = members ?? <String>[],
+       password = password,
+       accessMethod = accessMethod;
 }
