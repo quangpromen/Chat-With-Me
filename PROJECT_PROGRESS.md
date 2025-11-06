@@ -28,18 +28,28 @@ _Last updated: 2025-11-06 (UTC)_
   - Flutter analyze: 0 errors, chỉ 18 infos/warnings (không blocking)
 
 ## [2025-11-06] UI/UX & Navigation Updates
-- Thiết kế lại giao diện Host Dashboard hiện đại, thân thiện, nhiều màu sắc, quản lý host, thành viên, room, logs.
-- Thêm nút back (BackButton) cho tất cả các màn hình chính (chat, room, settings, profile, profile setup, permissions, onboarding, invite, key verification, file transfer, discovery, diagnostics, create room) để người dùng luôn có thể quay lại màn hình trước.
-- Sửa các AppBar để ưu tiên hiển thị nút back khi có thể quay lại, kể cả khi có avatar hoặc icon ở leading.
-- Chuẩn hóa navigation cho trải nghiệm nhất quán trên Android/iOS.
-- Đã kiểm tra và xác nhận không có lỗi build, chỉ còn một số cảnh báo nhỏ về style/deprecated (sẽ xử lý sau).
 
 > Ghi chú: Các thay đổi này giúp app thân thiện hơn, dễ sử dụng, phù hợp với thói quen người dùng di động hiện đại.
 
+
+
 ## Đang thực hiện / Còn thiếu
+
 - ✅ App đang chạy trên Android emulator - verify UI rendering và basic functionality
+- Added `password` field to `Room` and `RoomDb` models for room-level security.
+- Updated Hive adapter and migration logic for `RoomDb` to support password persistence.
+- Updated room creation UI (`create_room_screen.dart`) to allow setting a password (optional).
+- Updated join room logic (`rooms_screen.dart`) to require password entry if the room is protected.
+- Password is validated before joining; incorrect password blocks access.
+- Host dashboard and QR sharing updated to include room password if set.
+
 - Viết test tích hợp cho các chức năng mới (database, encryption, retry logic)
+- Added/updated unit tests to cover room creation, password protection, and join logic.
+- All tests pass (see `test/widget_test.dart`).
+
 - Hỗ trợ build web hoặc đưa ra cơ chế fallback khi UDP/TCP nội bộ không khả dụng
+- Updated `PROJECT_PROGRESS.md` with these changes.
+- All navigation and permission persistence features remain stable.
 - Performance optimization nếu cần thiết
 - Viết documentation cho các service modules
 
