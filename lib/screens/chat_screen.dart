@@ -1,3 +1,4 @@
+import '../chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -73,9 +74,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F8F6), // nền chat trắng-xám nhạt
       appBar: AppBar(
-        title: Text(room?.name ?? 'Chat'),
-        leading: const BackButton(),
+        backgroundColor: const Color(0xFFB2E5B2), // xanh lá nhạt
+        title: Text(
+          room?.name ?? 'Chat',
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: const BackButton(color: Colors.black),
+        elevation: 1,
       ),
       body: Column(
         children: [
@@ -171,68 +181,110 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMe = message.fromCurrentUser;
+    final isMe = message.isMe;
     final alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
     final bubbleColor = isMe
-        ? Theme.of(context).colorScheme.primaryContainer
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
-    final textColor = isMe
-        ? Theme.of(context).colorScheme.onPrimaryContainer
-        : Theme.of(context).colorScheme.onSurfaceVariant;
+        ? const Color(0xFF6FCF97) // xanh lá nhạt cho mình
+        : const Color(0xFFE0E0E0); // xám nhạt cho người khác
+    final textColor = isMe ? Colors.white : Colors.black87;
 
     final isImage = message.text.startsWith('[image]');
-    return Align(
-      alignment: alignment,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: bubbleColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: isMe
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () {
-                // TODO: Hiển thị trang profile của người gửi
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ProfileScreenView(name: message.senderName),
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isMe ? 48 : 8,
+        right: isMe ? 8 : 48,
+        top: 4,
+        bottom: 4,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          if (!isMe)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFB2E5B2),
+                child: Text(
+                  message.sender.isNotEmpty
+                      ? message.sender[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              },
-              child: Text(
-                message.senderName,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: textColor.withOpacity(0.7),
-                  decoration: TextDecoration.underline,
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            if (isImage)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  File(message.text.replaceFirst('[image]', '')),
-                  width: 180,
-                  height: 180,
-                  fit: BoxFit.cover,
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: bubbleColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isMe ? 20 : 6),
+                  bottomRight: Radius.circular(isMe ? 6 : 20),
                 ),
-              )
-            else
-              Text(
-                message.text,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: textColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-          ],
-        ),
+              child: Column(
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isMe)
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProfileScreenView(name: message.sender),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        message.sender,
+                        style: const TextStyle(
+                          color: Color(0xFF388E3C),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  if (!isMe) const SizedBox(height: 2),
+                  if (isImage)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(message.text.replaceFirst('[image]', '')),
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  else
+                    Text(
+                      message.text,
+                      style: TextStyle(color: textColor, fontSize: 15),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

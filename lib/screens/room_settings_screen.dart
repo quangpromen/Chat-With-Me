@@ -10,10 +10,21 @@ class RoomSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final _passwordController = TextEditingController(
-      text: room.password ?? '',
-    );
-    RoomAccessMethod _accessMethod = room.accessMethod;
+    final passwordController = TextEditingController(text: room.password ?? '');
+    RoomAccessMethod accessMethod = room.accessMethod;
+    void saveSettings() {
+      ref
+          .read(appStateProvider.notifier)
+          .updateRoomSettings(
+            room.id,
+            password: accessMethod == RoomAccessMethod.password
+                ? passwordController.text
+                : null,
+            accessMethod: accessMethod,
+          );
+      Navigator.of(context).pop();
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Room Settings')),
       body: Padding(
@@ -30,23 +41,27 @@ class RoomSettingsScreen extends ConsumerWidget {
               title: const Text('Open (anyone can join)'),
               leading: Radio<RoomAccessMethod>(
                 value: RoomAccessMethod.open,
-                groupValue: _accessMethod,
-                onChanged: (v) {}, // TODO: implement update
+                groupValue: accessMethod,
+                onChanged: (v) {
+                  accessMethod = v!;
+                },
               ),
             ),
             ListTile(
               title: const Text('Password required'),
               leading: Radio<RoomAccessMethod>(
                 value: RoomAccessMethod.password,
-                groupValue: _accessMethod,
-                onChanged: (v) {}, // TODO: implement update
+                groupValue: accessMethod,
+                onChanged: (v) {
+                  accessMethod = v!;
+                },
               ),
             ),
-            if (_accessMethod == RoomAccessMethod.password)
+            if (accessMethod == RoomAccessMethod.password)
               Padding(
                 padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                 child: TextField(
-                  controller: _passwordController,
+                  controller: passwordController,
                   decoration: const InputDecoration(
                     labelText: 'Room Password',
                     border: OutlineInputBorder(),
@@ -58,8 +73,10 @@ class RoomSettingsScreen extends ConsumerWidget {
               title: const Text('Manual approval (host must approve)'),
               leading: Radio<RoomAccessMethod>(
                 value: RoomAccessMethod.manual,
-                groupValue: _accessMethod,
-                onChanged: (v) {}, // TODO: implement update
+                groupValue: accessMethod,
+                onChanged: (v) {
+                  accessMethod = v!;
+                },
               ),
             ),
             const SizedBox(height: 32),
@@ -74,10 +91,7 @@ class RoomSettingsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: () {
-                // TODO: Call provider to update room settings
-                Navigator.of(context).pop();
-              },
+              onPressed: saveSettings,
             ),
             const SizedBox(height: 32),
             Divider(),

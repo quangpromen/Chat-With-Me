@@ -1,42 +1,20 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:math';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/lan_chat_server.dart';
+import '../services/lan_discovery_service.dart';
+import '../core/database_service.dart';
+import '../core/file_service.dart';
+import '../chat_screen.dart';
+import '../data/models/app_permission.dart';
 
-import '../data/models/app_settings.dart';
-import '../data/models/file_transfer.dart';
-import '../data/models/peer.dart';
+import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import '../data/models/room.dart';
 import '../data/models/user_profile.dart';
-import '../services/lan_discovery_service.dart';
-import '../services/lan_chat_server.dart';
-import 'package:chat_offline/core/file_service.dart';
-import 'package:chat_offline/core/database_service.dart';
-
-/// Logical permissions that the onboarding flow requests from the user.
-enum AppPermission { network, storage, microphone }
-
-/// Represents a single chat message within a room.
-@immutable
-class ChatMessage {
-  const ChatMessage({
-    required this.id,
-    required this.roomId,
-    required this.senderName,
-    required this.text,
-    required this.timestamp,
-    required this.fromCurrentUser,
-  });
-
-  final String id;
-  final String roomId;
-  final String senderName;
-  final String text;
-  final DateTime timestamp;
-  final bool fromCurrentUser;
-}
+import '../data/models/app_settings.dart';
+import '../data/models/peer.dart';
+import '../data/models/file_transfer.dart';
 
 /// Aggregate application state that powers the LAN chat experience.
 @immutable
@@ -101,8 +79,8 @@ class AppState {
     );
   }
 
-  factory AppState.initial() {
-    return const AppState(
+  static AppState initial() {
+    return AppState(
       onboardingComplete: false,
       grantedPermissions: <AppPermission>{},
       profile: null,
@@ -110,7 +88,7 @@ class AppState {
       rooms: <Room>[],
       messagesByRoom: <String, List<ChatMessage>>{},
       peers: <Peer>[],
-      settings: AppSettings(
+      settings: const AppSettings(
         themeMode: 'system',
         language: 'en',
         networkPref: 'auto',
@@ -121,7 +99,36 @@ class AppState {
   }
 }
 
+// ...existing code...
+
 class AppNotifier extends Notifier<AppState> {
+  void updateRoomSettings(
+    String roomId, {
+    String? password,
+    RoomAccessMethod? accessMethod,
+  }) {
+    final roomIndex = state.rooms.indexWhere((r) => r.id == roomId);
+    if (roomIndex == -1) return;
+    final oldRoom = state.rooms[roomIndex];
+    final updatedRoom = Room(
+      id: oldRoom.id,
+      name: oldRoom.name,
+      createdAt: oldRoom.createdAt,
+      hostId: oldRoom.hostId,
+      members: oldRoom.members,
+      password: password ?? oldRoom.password,
+      accessMethod: accessMethod ?? oldRoom.accessMethod,
+    );
+    final updatedRooms = List<Room>.from(state.rooms);
+    updatedRooms[roomIndex] = updatedRoom;
+    state = state.copyWith(rooms: updatedRooms);
+    final database = ref.read(databaseServiceProvider);
+    if (database.isAvailable) {
+      database.saveRoom(updatedRoom);
+    }
+    _syncServerState();
+  }
+
   Future<void> removeMemberFromRoom(String roomId, String member) async {
     final roomIndex = state.rooms.indexWhere((r) => r.id == roomId);
     if (roomIndex == -1) return;
@@ -205,12 +212,10 @@ class AppNotifier extends Notifier<AppState> {
         final dbMessages = await database.loadMessagesForRoom(room.id);
         final chatMessages = dbMessages.map((m) {
           return ChatMessage(
-            id: m.id.toString(),
-            roomId: m.roomId,
-            senderName: m.senderName,
+            sender: m.senderName,
             text: m.content,
-            timestamp: m.timestamp,
-            fromCurrentUser: m.fromSelf,
+            time: m.timestamp,
+            isMe: m.fromSelf,
           );
         }).toList();
         if (chatMessages.isNotEmpty) {
@@ -421,12 +426,10 @@ class AppNotifier extends Notifier<AppState> {
 
   static Map<String, dynamic> _messageToJson(ChatMessage message) =>
       <String, dynamic>{
-        'id': message.id,
-        'roomId': message.roomId,
-        'senderName': message.senderName,
+        'sender': message.sender,
         'text': message.text,
-        'timestamp': message.timestamp.toIso8601String(),
-        'fromCurrentUser': message.fromCurrentUser,
+        'time': message.time.toIso8601String(),
+        'isMe': message.isMe,
       };
 
   static String _generateDeviceId() {
@@ -578,9 +581,9 @@ class AppNotifier extends Notifier<AppState> {
     final content = text.trim();
     if (content.isEmpty) return null;
 
-    if (!state.messagesByRoom.containsKey(roomId)) {
-      return null;
-    }
+    final currentMessages = List<ChatMessage>.from(
+      state.messagesByRoom[roomId] ?? <ChatMessage>[],
+    );
 
     final resolvedSender = fromCurrentUser
         ? state.profile?.displayName ?? 'You'
@@ -589,22 +592,17 @@ class AppNotifier extends Notifier<AppState> {
               : 'Guest');
 
     final message = ChatMessage(
-      id: 'msg-${DateTime.now().microsecondsSinceEpoch}',
-      roomId: roomId,
-      senderName: resolvedSender,
+      sender: resolvedSender,
       text: content,
-      timestamp: DateTime.now(),
-      fromCurrentUser: fromCurrentUser,
+      time: DateTime.now(),
+      isMe: fromCurrentUser,
     );
 
-    final currentMessages = List<ChatMessage>.from(
-      state.messagesByRoom[roomId] ?? <ChatMessage>[],
-    )..add(message);
-
+    currentMessages.add(message);
     final updatedMessages = Map<String, List<ChatMessage>>.from(
       state.messagesByRoom,
-    )..[roomId] = currentMessages;
-
+    );
+    updatedMessages[roomId] = currentMessages;
     state = state.copyWith(messagesByRoom: updatedMessages);
 
     _syncServerState();

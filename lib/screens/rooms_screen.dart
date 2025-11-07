@@ -1,3 +1,4 @@
+import '../chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -82,7 +83,7 @@ class RoomsScreen extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                color: theme.colorScheme.surfaceVariant,
+                color: theme.colorScheme.surfaceContainerHighest,
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Column(
@@ -113,7 +114,7 @@ class RoomsScreen extends ConsumerWidget {
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: Card(
-                  color: theme.colorScheme.surfaceVariant,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -239,7 +240,7 @@ String? lastMessagePreview(List<ChatMessage> messages) {
     return null;
   }
   final last = messages.last;
-  return '${last.senderName}: ${last.text}';
+  return '${last.sender}: ${last.text}';
 }
 
 // --- Custom badge and subtitle widgets ---
