@@ -44,6 +44,7 @@ dependencies:
   crypto: ^3.0.3
   image_picker: ^1.1.2
   path_provider: ^2.0.15
+  emoji_picker_flutter: ^4.3.0
 
 dev_dependencies:
   flutter_test:
