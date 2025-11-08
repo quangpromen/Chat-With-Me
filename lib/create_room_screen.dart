@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 // CreateRoomScreen
 // - TextFields: Room Name, Description
@@ -39,7 +40,9 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     final name = _nameController.text.trim();
     final desc = _descController.text.trim();
 
-    // Placeholder: creation logic would go here
+    // Tạo key cho phòng (demo: dùng tên phòng, thực tế nên dùng id hoặc mã hóa)
+    final roomKey = _generateRoomKey(name);
+
     final descText = desc.isNotEmpty ? ' — $desc' : '';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -49,10 +52,45 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
       ),
     );
 
+    // Hiển thị key/QR sau khi tạo phòng
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Chia sẻ phòng'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Key phòng: $roomKey'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: 180,
+              height: 180,
+              child: QrImageView(
+                data: roomKey,
+                version: QrVersions.auto,
+                size: 180.0,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+
     // Optionally clear or navigate back
     _nameController.clear();
     _descController.clear();
     setState(() => _type = RoomType.open);
+  }
+
+  String _generateRoomKey(String name) {
+    // Demo: key là 'room-' + tên phòng (thực tế nên dùng id hoặc mã hóa)
+    return 'room-$name';
   }
 
   @override
