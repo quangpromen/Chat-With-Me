@@ -1,5 +1,8 @@
 import 'dart:async';
+
 import 'dart:math';
+import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/lan_chat_server.dart';
 import '../services/lan_discovery_service.dart';
@@ -7,30 +10,14 @@ import '../core/database_service.dart';
 import '../core/file_service.dart';
 import '../chat_screen.dart';
 import '../data/models/app_permission.dart';
-
-import 'dart:collection';
-import 'package:flutter/foundation.dart';
 import '../data/models/room.dart';
 import '../data/models/user_profile.dart';
 import '../data/models/app_settings.dart';
 import '../data/models/peer.dart';
 import '../data/models/file_transfer.dart';
 
-/// Aggregate application state that powers the LAN chat experience.
-@immutable
+// ================== APP STATE MODEL ==================
 class AppState {
-  const AppState({
-    required this.onboardingComplete,
-    required this.grantedPermissions,
-    required this.profile,
-    required this.isHosting,
-    required this.rooms,
-    required this.messagesByRoom,
-    required this.peers,
-    required this.settings,
-    required this.transfers,
-  });
-
   final bool onboardingComplete;
   final Set<AppPermission> grantedPermissions;
   final UserProfile? profile;
@@ -38,22 +25,20 @@ class AppState {
   final List<Room> rooms;
   final Map<String, List<ChatMessage>> messagesByRoom;
   final List<Peer> peers;
-  final AppSettings settings;
+  final AppSettings? settings;
   final List<FileTransfer> transfers;
 
-  bool isPermissionGranted(AppPermission permission) =>
-      grantedPermissions.contains(permission);
-
-  bool get hasAllPermissions =>
-      grantedPermissions.containsAll(AppPermission.values);
-
-  List<ChatMessage> messagesForRoom(String roomId) =>
-      messagesByRoom[roomId] ?? const [];
-
-  UnmodifiableListView<Room> get roomList => UnmodifiableListView(rooms);
-  UnmodifiableListView<Peer> get peerList => UnmodifiableListView(peers);
-  UnmodifiableListView<FileTransfer> get transferList =>
-      UnmodifiableListView(transfers);
+  AppState({
+    required this.onboardingComplete,
+    required this.grantedPermissions,
+    required this.profile,
+    required this.isHosting,
+    required this.rooms,
+    required this.messagesByRoom,
+    required this.peers,
+    this.settings,
+    this.transfers = const [],
+  });
 
   AppState copyWith({
     bool? onboardingComplete,
@@ -97,9 +82,20 @@ class AppState {
       transfers: <FileTransfer>[],
     );
   }
+
+  // Helper getters for providers
+  UnmodifiableListView<Room> get roomList => UnmodifiableListView(rooms);
+  UnmodifiableListView<Peer> get peerList => UnmodifiableListView(peers);
+  UnmodifiableListView<FileTransfer> get transferList =>
+      UnmodifiableListView(transfers);
+  List<ChatMessage> messagesForRoom(String roomId) =>
+      messagesByRoom[roomId] ?? <ChatMessage>[];
+
+  bool get hasAllPermissions =>
+      grantedPermissions.length == AppPermission.values.length;
 }
 
-// ...existing code...
+// ================== APP STATE MODEL ==================
 
 class AppNotifier extends Notifier<AppState> {
   void updateRoomSettings(

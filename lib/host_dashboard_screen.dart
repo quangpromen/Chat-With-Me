@@ -34,7 +34,7 @@ class _HostDashboardScreenState extends ConsumerState<HostDashboardScreen> {
   // final Set<String> _bannedIps = <String>{};
   static const int _maxLogEntries = 50;
 
-  String _hostPassword = '';
+  final String _hostPassword = '';
   final TextEditingController _passwordController = TextEditingController();
 
   final List<String> logs = [
@@ -93,7 +93,7 @@ class _HostDashboardScreenState extends ConsumerState<HostDashboardScreen> {
             const SizedBox(height: 8),
             ...hostRooms.map(
               (room) => Card(
-                color: colorScheme.surfaceVariant,
+                color: colorScheme.surfaceContainerHighest,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -257,8 +257,8 @@ class _StatCard extends StatelessWidget {
           children: [
             CircleAvatar(
               backgroundColor: color.withOpacity(0.18),
-              child: Icon(icon, color: color, size: 28),
               radius: 22,
+              child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 8),
             Text(

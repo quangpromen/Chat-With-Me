@@ -8,6 +8,49 @@ import '../widgets/common.dart';
 import 'room_settings_screen.dart';
 
 class RoomsScreen extends ConsumerWidget {
+  void _joinRoomByKey(BuildContext context, String key) {
+    // TODO: Integrate with LAN service and AppState for real join logic
+    // Simulate finding room on LAN
+    final foundRoom = null; // Replace with actual LAN lookup
+    if (foundRoom != null) {
+      // TODO: Sync join with AppState and show success dialog
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Tham gia phòng thành công'),
+          content: Text('Đã tham gia phòng: ${foundRoom['title']}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Không tìm thấy phòng'),
+          content: Text('Không tìm thấy phòng với key: $key trên mạng LAN'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  String _decodeRoomKey(String key) {
+    if (key.startsWith('room-')) {
+      return key.substring(5);
+    }
+    return key;
+  }
+
   void _ensureDiscoveryOrHost(WidgetRef ref, bool isHosting) {
     final notifier = ref.read(appStateProvider.notifier);
     if (isHosting) {
@@ -15,6 +58,38 @@ class RoomsScreen extends ConsumerWidget {
     } else {
       notifier.ensureDiscoveryRunning();
     }
+  }
+
+  void _showJoinRoomDialog(BuildContext context, WidgetRef ref) {
+    final keyController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Join Room by Key/QR'),
+          content: TextField(
+            controller: keyController,
+            decoration: const InputDecoration(labelText: 'Enter Room Key'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final key = keyController.text.trim();
+                if (key.isEmpty) return;
+                Navigator.of(ctx).pop();
+                Navigator.of(ctx).pop();
+                _joinRoomByKey(context, key);
+              },
+              child: const Text('Join'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   const RoomsScreen({super.key});
@@ -46,6 +121,11 @@ class RoomsScreen extends ConsumerWidget {
             icon: const Icon(Icons.person),
             tooltip: 'Profile',
             onPressed: () => context.push('/profile'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Join Room by Key/QR',
+            onPressed: () => _showJoinRoomDialog(context, ref),
           ),
         ],
       ),

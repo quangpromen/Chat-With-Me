@@ -1,57 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// ChatScreen
-// - ListView of message bubbles (left/right alignment)
-// - Input composer with TextField, attach button, send button
-// - Connection status banner (Connected / Reconnecting)
-// - Each message bubble shows: sender name, time, ticks (sent/delivered/read)
-// - Uses Hero animation for the avatar when entering chat
-
-const _kPadding = EdgeInsets.all(16);
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ChatMessage {
-  ChatMessage({
-    required this.sender,
-    required this.text,
-    required this.time,
-    this.isMe = false,
-  });
   final String sender;
   final String text;
   final DateTime time;
   final bool isMe;
-  // placeholder status: 0=sent,1=delivered,2=read
-  int status = 0;
+  int status;
+  ChatMessage({
+    required this.sender,
+    required this.text,
+    required this.time,
+    required this.isMe,
+    this.status = 0,
+  });
 }
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
-
-  // Route suggestion: '/chat'
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  final List<ChatMessage> _messages = List.generate(
-    8,
-    (i) => ChatMessage(
-      sender: i.isEven ? 'Alice' : 'You',
-      text: i.isEven ? 'Hello from Alice (#$i)' : 'Reply message (#$i)',
-      time: DateTime.now().subtract(Duration(minutes: i * 5)),
-      isMe: i.isOdd,
-    ),
-  );
-
+  final List<ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
-  final bool _reconnecting = false;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   void _sendMessage() {
     final text = _controller.text.trim();
@@ -66,7 +41,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _messages.insert(0, msg);
       _controller.clear();
     });
-    // simulate delivery/read
     Future.delayed(const Duration(seconds: 1), () {
       setState(() => msg.status = 1);
     });
@@ -75,18 +49,62 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  void _showShareRoomDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Share Room'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 180,
+              height: 180,
+              child: QrImageView(
+                data: 'room-123456',
+                version: QrVersions.auto,
+                size: 180.0,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SelectableText('Room Key: room-123456'),
+            const SizedBox(height: 8),
+            Text('Scan QR or copy key to join this room.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBanner() {
-    if (_reconnecting) {
-      return _ConnectionBanner(
-        text: 'Reconnecting...',
-        color: Colors.orange,
-        icon: Icons.sync,
-      );
-    }
-    return _ConnectionBanner(
-      text: 'Connected',
-      color: Colors.green,
-      icon: Icons.check_circle,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.green.withAlpha((0.12 * 255).round()),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Connected',
+              style: const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -106,7 +124,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
         title: const Text('Chat'),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+          IconButton(
+            onPressed: () => _showShareRoomDialog(context),
+            icon: const Icon(Icons.qr_code),
+            tooltip: 'Share Room',
+          ),
         ],
       ),
       body: Column(
@@ -120,7 +142,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: _kPadding,
+              padding: EdgeInsets.zero,
               child: ListView.builder(
                 reverse: true,
                 itemCount: _messages.length,
@@ -136,7 +158,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         constraints: BoxConstraints(
                           maxWidth: MediaQuery.of(context).size.width * 0.75,
                         ),
-                        child: _MessageBubble(message: msg),
+                        child: Text(msg.text),
                       ),
                     ),
                   );
@@ -144,8 +166,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
           ),
-
-          // Composer
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -174,7 +194,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
                   const SizedBox(width: 8),
                   FloatingActionButton(
-                    onPressed: _sendMessage, // child argument last
+                    onPressed: _sendMessage,
                     mini: true,
                     child: const Icon(Icons.send),
                   ),
@@ -260,41 +280,6 @@ class _MessageBubble extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConnectionBanner extends StatelessWidget {
-  const _ConnectionBanner({
-    required this.text,
-    required this.color,
-    required this.icon,
-  });
-  final String text;
-  final Color color;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withAlpha((0.12 * 255).round()),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: color, fontWeight: FontWeight.w600),
-            ),
           ),
         ],
       ),
