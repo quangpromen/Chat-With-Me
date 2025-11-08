@@ -8,6 +8,14 @@
 - Hướng dẫn test nhanh: `flutter test` hoặc chạy app, kiểm tra các chức năng host/room, QR, navigation.
 # Project Progress Log
 
+## [2025-11-08] TODOs cần fix tiếp (ghi chú ngày 8/11/2025)
+
+- [ ] Fix lỗi sync phòng LAN: Khi tạo phòng trên một máy, các máy khác không thấy phòng mới. Kiểm tra lại logic kết nối client-host, đảm bảo client kết nối TCP tới host khi phát hiện host qua discovery, và nhận được state phòng.
+- [ ] Kiểm tra lại broadcastRoom/broadcastMessage: Đảm bảo các client nhận được cập nhật phòng/tin nhắn mới khi host tạo hoặc khi client tạo phòng gửi lên host.
+- [ ] Bổ sung test/unit test cho quản lý room: Viết test cho các hàm tạo, sửa, xóa room, kiểm tra logic lưu trữ, truy cập, và sync phòng.
+- [ ] Kiểm tra lại logic nhận state khi client kết nối host: Đảm bảo client nhận và cập nhật danh sách phòng/messages đúng khi nhận payload 'state' từ host.
+- [ ] Kiểm tra UI cập nhật phòng: Khi có phòng mới, UI phải tự động cập nhật danh sách phòng trên tất cả thiết bị.
+
 _Last updated: 2025-11-06 (UTC)_
 
 ## Completed

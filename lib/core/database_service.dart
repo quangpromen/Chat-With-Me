@@ -8,7 +8,6 @@ import '../data/models/peer_db.dart';
 import '../data/models/room_db.dart';
 import '../data/models/peer.dart';
 import '../data/models/room.dart';
-import '../providers/app_state.dart';
 
 class DatabaseService {
   late Box _settingsBox;

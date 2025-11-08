@@ -6,15 +6,14 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:chat_offline/core/signaling_service.dart';
-import 'package:chat_offline/data/models/file_transfer.dart';
+import '../core/signaling_service.dart';
+import '../data/models/file_transfer.dart';
 
 const _kDefaultChunkSize = 32 * 1024; // 32 KB
 
 class FileService {
   FileService(this._signaling) {
-    _messageSubscription =
-        _signaling.messages.listen(_handleInboundMessage);
+    _messageSubscription = _signaling.messages.listen(_handleInboundMessage);
   }
 
   final SignalingService _signaling;
@@ -52,18 +51,18 @@ class FileService {
       totalBytes: totalBytes,
     );
     _outgoing[id] = outgoing;
-      _emitUpdate(
-        FileTransferUpdate(
-          id: id,
-          fileName: outgoing.fileName,
-          filePath: outgoing.filePath,
-          savedToPath: outgoing.filePath,
-          bytesTransferred: 0,
-          totalBytes: totalBytes,
-          status: FileTransferStatus.offered,
-          direction: FileTransferDirection.outgoing,
-        ),
-      );
+    _emitUpdate(
+      FileTransferUpdate(
+        id: id,
+        fileName: outgoing.fileName,
+        filePath: outgoing.filePath,
+        savedToPath: outgoing.filePath,
+        bytesTransferred: 0,
+        totalBytes: totalBytes,
+        status: FileTransferStatus.offered,
+        direction: FileTransferDirection.outgoing,
+      ),
+    );
 
     final offerPayload = <String, dynamic>{
       'type': 'file_offer',
@@ -111,19 +110,19 @@ class FileService {
         debugPrint('Failed to send file chunk: $err');
         debugPrint('$stack');
       }
-        _emitUpdate(
-          FileTransferUpdate(
-            id: id,
-            fileName: outgoing.fileName,
-            filePath: outgoing.filePath,
-            savedToPath: outgoing.filePath,
-            bytesTransferred: outgoing.bytesSent,
-            totalBytes: outgoing.totalBytes,
-            status: FileTransferStatus.failed,
-            direction: FileTransferDirection.outgoing,
-            errorDescription: '$err',
-          ),
-        );
+      _emitUpdate(
+        FileTransferUpdate(
+          id: id,
+          fileName: outgoing.fileName,
+          filePath: outgoing.filePath,
+          savedToPath: outgoing.filePath,
+          bytesTransferred: outgoing.bytesSent,
+          totalBytes: outgoing.totalBytes,
+          status: FileTransferStatus.failed,
+          direction: FileTransferDirection.outgoing,
+          errorDescription: '$err',
+        ),
+      );
       rethrow;
     } finally {
       await raf.close();
@@ -306,10 +305,7 @@ class FileService {
       if (kDebugMode) {
         debugPrint('Failed to process file chunk: $err');
       }
-      _handleError(<String, dynamic>{
-        'id': id,
-        'message': 'decode_error',
-      });
+      _handleError(<String, dynamic>{'id': id, 'message': 'decode_error'});
     }
   }
 
@@ -374,7 +370,10 @@ class FileService {
 
   static String _generateTransferId() {
     final timestamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
-    final randomPart = _random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0');
+    final randomPart = _random
+        .nextInt(0xFFFFFFFF)
+        .toRadixString(16)
+        .padLeft(8, '0');
     return 'tx-$timestamp$randomPart';
   }
 }
@@ -402,9 +401,7 @@ class FileTransferUpdate {
   final FileTransferDirection direction;
   final String? errorDescription;
 
-  double get progress => totalBytes == 0
-      ? 0
-      : bytesTransferred / totalBytes;
+  double get progress => totalBytes == 0 ? 0 : bytesTransferred / totalBytes;
 }
 
 class _OutgoingTransfer {
