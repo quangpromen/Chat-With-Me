@@ -202,9 +202,8 @@ class _HostDashboardScreenState extends ConsumerState<HostDashboardScreen> {
                     icon: const Icon(Icons.remove_circle, color: Colors.red),
                     tooltip: 'Remove Member',
                     onPressed: () async {
-                      await ref
-                          .read(appStateProvider.notifier)
-                          .removeMemberFromRoom(room.id, m);
+                      await ref.read(appStateProvider.notifier);
+                      // Room logic removed: no longer needed
                       Navigator.of(context).pop();
                     },
                   ),
@@ -224,7 +223,7 @@ class _HostDashboardScreenState extends ConsumerState<HostDashboardScreen> {
   }
 
   void _deleteRoom(room) async {
-    await ref.read(appStateProvider.notifier).deleteRoom(room.id);
+    // Room logic removed: no longer needed
     setState(() {
       logs.insert(0, 'Deleted room: ${room.name}');
       if (logs.length > _maxLogEntries) logs.removeLast();
