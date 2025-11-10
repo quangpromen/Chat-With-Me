@@ -6,8 +6,6 @@ import 'providers/app_state.dart';
 import 'screens/permissions_screen.dart';
 import 'screens/profile_setup_screen.dart';
 import 'screens/discovery_screen.dart';
-import 'screens/rooms_screen.dart';
-import 'screens/room_create_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/peers_screen.dart';
 import 'screens/settings_screen.dart';
@@ -39,13 +37,21 @@ final _router = GoRouter(
       builder: (_, __) => const ProfileSetupScreen(),
     ),
     GoRoute(path: '/discovery', builder: (_, __) => const DiscoveryScreen()),
-    GoRoute(path: '/rooms', builder: (_, __) => const RoomsScreen()),
-    GoRoute(path: '/room-create', builder: (_, __) => const RoomCreateScreen()),
     GoRoute(path: '/manual-host', builder: (_, __) => const ManualHostScreen()),
     GoRoute(
-      path: '/chat/:roomId',
-      builder: (context, state) =>
-          ChatScreen(roomId: state.pathParameters['roomId'] ?? 'room'),
+      path: '/chat',
+      builder: (context, state) => ChatScreen(
+        peerId:
+            state.extra != null &&
+                (state.extra as Map<String, dynamic>)['peerId'] != null
+            ? (state.extra as Map<String, dynamic>)['peerId']
+            : '',
+        peerIp:
+            state.extra != null &&
+                (state.extra as Map<String, dynamic>)['peerIp'] != null
+            ? (state.extra as Map<String, dynamic>)['peerIp']
+            : '',
+      ),
     ),
     GoRoute(
       path: '/transfer/:fileId',

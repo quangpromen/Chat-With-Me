@@ -23,7 +23,12 @@ class DiscoveryScreen extends ConsumerStatefulWidget {
 }
 
 class Host {
-  Host({required this.name, required this.ip, this.port, this.connected = false});
+  Host({
+    required this.name,
+    required this.ip,
+    this.port,
+    this.connected = false,
+  });
   final String name;
   final String ip;
   final int? port;
@@ -74,7 +79,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
             peers.map((peer) {
               final ip = peer['ip'] as String? ?? '0.0.0.0';
               final port = (peer['port'] as int?) ?? 8080;
-              final isConnected = (endpoint != null &&
+              final isConnected =
+                  (endpoint != null &&
                       (endpoint == '$ip:$port' || endpoint == ip)) ||
                   (discovery.isHost && discovery.hostIp == ip);
               return Host(
@@ -108,8 +114,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
     final discovery = ref.read(discoveryServiceProvider);
     final signaling = ref.read(signalingServiceProvider);
     try {
-  await signaling.startServer(port: 8080);
-  await discovery.advertiseSelf(port: 8080, asHost: true);
+      await signaling.startServer(port: 8080);
+      await discovery.advertiseSelf(port: 8080, asHost: true);
       final selfEndpoint = '${discovery.hostIp ?? '0.0.0.0'}:8080';
       signaling.connectedEndpoint = selfEndpoint;
       if (!mounted) return;
@@ -122,10 +128,14 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
           port: 8080,
           connected: true,
         );
-        _hosts.removeWhere((h) => h.ip == selfHost.ip && h.port == selfHost.port);
+        _hosts.removeWhere(
+          (h) => h.ip == selfHost.ip && h.port == selfHost.port,
+        );
         _hosts.insert(0, selfHost);
       });
-      _showSnackBar('Hosting started on ${discovery.hostIp ?? 'local network'}');
+      _showSnackBar(
+        'Hosting started on ${discovery.hostIp ?? 'local network'}',
+      );
     } catch (err) {
       if (!mounted) return;
       setState(() {
@@ -144,8 +154,10 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
         return AlertDialog(
           title: const Text('Enter Host IP'),
           actionsPadding: const EdgeInsets.only(bottom: 12, right: 16),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 16,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -157,7 +169,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
               const SizedBox(height: 12),
               TextField(
                 controller: portController,
-                decoration: const InputDecoration(hintText: 'Port (default 8080)'),
+                decoration: const InputDecoration(
+                  hintText: 'Port (default 8080)',
+                ),
                 keyboardType: TextInputType.number,
               ),
             ],
@@ -194,9 +208,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _attemptConnect(int index) async {
@@ -321,6 +335,54 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
     );
   }
 
+  void _showHostOptions(BuildContext context, Host host) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Host: ${host.name}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text('IP: ${host.ip}${host.port != null ? ':${host.port}' : ''}'),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.chat),
+              label: const Text('Nhắn tin với chủ host'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                // Giả sử có ChatScreen và GoRouter, chuyển sang chat với host
+                Navigator.of(context).pushNamed(
+                  '/chat',
+                  arguments: {'peerId': host.name, 'peerIp': host.ip},
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHostList() {
     if (_hosts.isEmpty) {
       return Center(
@@ -352,11 +414,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
                   label: Text(h.connected ? 'Connected' : 'Available'),
                   backgroundColor: h.connected
                       ? Colors.green.shade50
-                      : Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
-          onTap: () => _attemptConnect(index),
+          onTap: () => _showHostOptions(context, h),
         );
       },
     );

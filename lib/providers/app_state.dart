@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'dart:math';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
@@ -16,6 +15,12 @@ import '../data/models/app_settings.dart';
 import '../data/models/peer.dart';
 import '../data/models/file_transfer.dart';
 
+final messagesByPeerProvider = Provider.family<List<ChatMessage>, String>(
+  (ref, peerId) => ref.watch(
+    appStateProvider.select((state) => state.messagesForPeer(peerId)),
+  ),
+);
+
 // ================== APP STATE MODEL ==================
 class AppState {
   final bool onboardingComplete;
@@ -23,7 +28,7 @@ class AppState {
   final UserProfile? profile;
   final bool isHosting;
   final List<Room> rooms;
-  final Map<String, List<ChatMessage>> messagesByRoom;
+  final Map<String, List<ChatMessage>> messagesByPeer;
   final List<Peer> peers;
   final AppSettings? settings;
   final List<FileTransfer> transfers;
@@ -34,7 +39,7 @@ class AppState {
     required this.profile,
     required this.isHosting,
     required this.rooms,
-    required this.messagesByRoom,
+    required this.messagesByPeer,
     required this.peers,
     this.settings,
     this.transfers = const [],
@@ -46,7 +51,7 @@ class AppState {
     UserProfile? profile,
     bool? isHosting,
     List<Room>? rooms,
-    Map<String, List<ChatMessage>>? messagesByRoom,
+    Map<String, List<ChatMessage>>? messagesByPeer,
     List<Peer>? peers,
     AppSettings? settings,
     List<FileTransfer>? transfers,
@@ -57,7 +62,7 @@ class AppState {
       profile: profile ?? this.profile,
       isHosting: isHosting ?? this.isHosting,
       rooms: rooms ?? this.rooms,
-      messagesByRoom: messagesByRoom ?? this.messagesByRoom,
+      messagesByPeer: messagesByPeer ?? this.messagesByPeer,
       peers: peers ?? this.peers,
       settings: settings ?? this.settings,
       transfers: transfers ?? this.transfers,
@@ -71,7 +76,7 @@ class AppState {
       profile: null,
       isHosting: false,
       rooms: <Room>[],
-      messagesByRoom: <String, List<ChatMessage>>{},
+      messagesByPeer: <String, List<ChatMessage>>{},
       peers: <Peer>[],
       settings: const AppSettings(
         themeMode: 'system',
@@ -88,8 +93,8 @@ class AppState {
   UnmodifiableListView<Peer> get peerList => UnmodifiableListView(peers);
   UnmodifiableListView<FileTransfer> get transferList =>
       UnmodifiableListView(transfers);
-  List<ChatMessage> messagesForRoom(String roomId) =>
-      messagesByRoom[roomId] ?? <ChatMessage>[];
+  List<ChatMessage> messagesForPeer(String peerId) =>
+      messagesByPeer[peerId] ?? <ChatMessage>[];
 
   bool get hasAllPermissions =>
       grantedPermissions.length == AppPermission.values.length;
@@ -98,70 +103,44 @@ class AppState {
 // ================== APP STATE MODEL ==================
 
 class AppNotifier extends Notifier<AppState> {
-  void updateRoomSettings(
-    String roomId, {
-    String? password,
-    RoomAccessMethod? accessMethod,
+  ChatMessage? sendMessageToPeer(
+    String peerId,
+    String peerIp,
+    String text, {
+    bool fromCurrentUser = true,
+    String? senderName,
   }) {
-    final roomIndex = state.rooms.indexWhere((r) => r.id == roomId);
-    if (roomIndex == -1) return;
-    final oldRoom = state.rooms[roomIndex];
-    final updatedRoom = Room(
-      id: oldRoom.id,
-      name: oldRoom.name,
-      createdAt: oldRoom.createdAt,
-      hostId: oldRoom.hostId,
-      members: oldRoom.members,
-      password: password ?? oldRoom.password,
-      accessMethod: accessMethod ?? oldRoom.accessMethod,
-    );
-    final updatedRooms = List<Room>.from(state.rooms);
-    updatedRooms[roomIndex] = updatedRoom;
-    state = state.copyWith(rooms: updatedRooms);
-    final database = ref.read(databaseServiceProvider);
-    if (database.isAvailable) {
-      database.saveRoom(updatedRoom);
-    }
-    _syncServerState();
-  }
+    final content = text.trim();
+    if (content.isEmpty) return null;
 
-  Future<void> removeMemberFromRoom(String roomId, String member) async {
-    final roomIndex = state.rooms.indexWhere((r) => r.id == roomId);
-    if (roomIndex == -1) return;
-    final oldRoom = state.rooms[roomIndex];
-    final newMembers = List<String>.from(oldRoom.members)..remove(member);
-    final updatedRoom = Room(
-      id: oldRoom.id,
-      name: oldRoom.name,
-      createdAt: oldRoom.createdAt,
-      hostId: oldRoom.hostId,
-      members: newMembers,
+    final currentMessages = List<ChatMessage>.from(
+      state.messagesByPeer[peerId] ?? <ChatMessage>[],
     );
-    final updatedRooms = List<Room>.from(state.rooms)
-      ..[roomIndex] = updatedRoom;
-    state = state.copyWith(rooms: updatedRooms);
-    final database = ref.read(databaseServiceProvider);
-    if (database.isAvailable) {
-      await database.saveRoom(updatedRoom);
-    }
-    _syncServerState();
-  }
 
-  Future<void> deleteRoom(String roomId) async {
-    final updatedRooms = List<Room>.from(state.rooms)
-      ..removeWhere((r) => r.id == roomId);
+    final resolvedSender = fromCurrentUser
+        ? state.profile?.displayName ?? 'You'
+        : (senderName?.trim().isNotEmpty == true
+              ? senderName!.trim()
+              : 'Guest');
+
+    final message = ChatMessage(
+      sender: resolvedSender,
+      text: content,
+      time: DateTime.now(),
+      isMe: fromCurrentUser,
+    );
+
+    currentMessages.add(message);
     final updatedMessages = Map<String, List<ChatMessage>>.from(
-      state.messagesByRoom,
-    )..remove(roomId);
-    state = state.copyWith(
-      rooms: updatedRooms,
-      messagesByRoom: updatedMessages,
+      state.messagesByPeer,
     );
-    final database = ref.read(databaseServiceProvider);
-    if (database.isAvailable) {
-      await database.deleteRoom(roomId);
-    }
-    _syncServerState();
+    updatedMessages[peerId] = currentMessages;
+    state = state.copyWith(messagesByPeer: updatedMessages);
+
+    // TODO: gửi qua signalingService tới peerIp
+    // ref.read(signalingServiceProvider).sendString(text);
+
+    return message;
   }
 
   StreamSubscription<List<Peer>>? _peerSubscription;
@@ -176,54 +155,7 @@ class AppNotifier extends Notifier<AppState> {
   AppState build() {
     ref.onDispose(_dispose);
     _listenToFileTransfers();
-    _loadFromDatabase();
     return AppState.initial();
-  }
-
-  Future<void> _loadFromDatabase() async {
-    final database = ref.read(databaseServiceProvider);
-    await database.initialize();
-    if (!database.isAvailable) {
-      return;
-    }
-    try {
-      // Load permissions
-      final loadedPerms = database.loadPermissions();
-      if (loadedPerms.isNotEmpty) {
-        state = state.copyWith(grantedPermissions: loadedPerms);
-      }
-      // Load rooms
-      final rooms = await database.loadAllRooms();
-      if (rooms.isNotEmpty) {
-        state = state.copyWith(rooms: rooms);
-      }
-      // Load peers
-      final peers = await database.loadAllPeers();
-      if (peers.isNotEmpty) {
-        state = state.copyWith(peers: peers);
-      }
-      // Load messages for each room
-      final messagesByRoom = <String, List<ChatMessage>>{};
-      for (final room in rooms) {
-        final dbMessages = await database.loadMessagesForRoom(room.id);
-        final chatMessages = dbMessages.map((m) {
-          return ChatMessage(
-            sender: m.senderName,
-            text: m.content,
-            time: m.timestamp,
-            isMe: m.fromSelf,
-          );
-        }).toList();
-        if (chatMessages.isNotEmpty) {
-          messagesByRoom[room.id] = chatMessages;
-        }
-      }
-      if (messagesByRoom.isNotEmpty) {
-        state = state.copyWith(messagesByRoom: messagesByRoom);
-      }
-    } catch (e) {
-      debugPrint('Failed to load data from database: $e');
-    }
   }
 
   void _dispose() {
@@ -353,10 +285,8 @@ class AppNotifier extends Notifier<AppState> {
       } finally {
         _isStartingServer = false;
       }
-      _serverSubscription = server.events.listen(_handleHostEvent);
     }
 
-    _syncServerState();
     ref
         .read(lanDiscoveryServiceProvider)
         .setHostingStatus(isHosting: true, port: server.port);
@@ -374,59 +304,6 @@ class AppNotifier extends Notifier<AppState> {
         .read(lanDiscoveryServiceProvider)
         .setHostingStatus(isHosting: false, port: null);
   }
-
-  void _handleHostEvent(LanHostEvent event) {
-    if (event is ClientCreateRoomEvent) {
-      createRoom(event.roomName, createdByDisplayName: event.displayName);
-    } else if (event is ClientSendMessageEvent) {
-      sendMessage(
-        event.roomId,
-        event.text,
-        fromCurrentUser: false,
-        senderName: event.displayName,
-      );
-    }
-  }
-
-  void _syncServerState() {
-    if (!state.isHosting) {
-      return;
-    }
-    final server = ref.read(lanChatServerProvider);
-    if (!server.isRunning) {
-      return;
-    }
-    server.replaceState(
-      rooms: state.rooms.map(_roomToJson).toList(growable: false),
-      messages: _messagesSnapshot(),
-    );
-  }
-
-  Map<String, List<Map<String, dynamic>>> _messagesSnapshot() {
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in state.messagesByRoom.entries) {
-      result[entry.key] = entry.value
-          .map(_messageToJson)
-          .toList(growable: false);
-    }
-    return result;
-  }
-
-  static Map<String, dynamic> _roomToJson(Room room) => <String, dynamic>{
-    'id': room.id,
-    'name': room.name,
-    'createdAt': room.createdAt.toIso8601String(),
-    'hostId': room.hostId,
-    'members': List<String>.from(room.members),
-  };
-
-  static Map<String, dynamic> _messageToJson(ChatMessage message) =>
-      <String, dynamic>{
-        'sender': message.sender,
-        'text': message.text,
-        'time': message.time.toIso8601String(),
-        'isMe': message.isMe,
-      };
 
   static String _generateDeviceId() {
     final timestamp = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
@@ -514,103 +391,6 @@ class AppNotifier extends Notifier<AppState> {
     }
     unawaited(_tearDownServer());
   }
-
-  Room? createRoom(
-    String name, {
-    String? createdByDisplayName,
-    String? password,
-    RoomAccessMethod accessMethod = RoomAccessMethod.open,
-  }) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-
-    final hostDisplayName = state.profile?.displayName ?? 'You';
-    final members = <String>{hostDisplayName};
-    if (createdByDisplayName != null && createdByDisplayName.isNotEmpty) {
-      members.add(createdByDisplayName);
-    }
-
-    final newRoom = Room(
-      id: 'room-${DateTime.now().microsecondsSinceEpoch}',
-      name: trimmed,
-      createdAt: DateTime.now(),
-      hostId: state.profile?.id,
-      members: members.toList(growable: false),
-      password: password,
-      accessMethod: accessMethod,
-    );
-
-    final updatedRooms = List<Room>.from(state.rooms)..add(newRoom);
-    final updatedMessages = Map<String, List<ChatMessage>>.from(
-      state.messagesByRoom,
-    )..putIfAbsent(newRoom.id, () => <ChatMessage>[]);
-
-    state = state.copyWith(
-      rooms: updatedRooms,
-      messagesByRoom: updatedMessages,
-    );
-
-    // Save to database
-    final database = ref.read(databaseServiceProvider);
-    if (database.isAvailable) {
-      unawaited(database.saveRoom(newRoom));
-    }
-
-    _syncServerState();
-    if (state.isHosting) {
-      final server = ref.read(lanChatServerProvider);
-      if (server.isRunning) {
-        server.broadcastRoom(_roomToJson(newRoom));
-      }
-    }
-    return newRoom;
-  }
-
-  ChatMessage? sendMessage(
-    String roomId,
-    String text, {
-    bool fromCurrentUser = true,
-    String? senderName,
-  }) {
-    final content = text.trim();
-    if (content.isEmpty) return null;
-
-    final currentMessages = List<ChatMessage>.from(
-      state.messagesByRoom[roomId] ?? <ChatMessage>[],
-    );
-
-    final resolvedSender = fromCurrentUser
-        ? state.profile?.displayName ?? 'You'
-        : (senderName?.trim().isNotEmpty == true
-              ? senderName!.trim()
-              : 'Guest');
-
-    final message = ChatMessage(
-      sender: resolvedSender,
-      text: content,
-      time: DateTime.now(),
-      isMe: fromCurrentUser,
-    );
-
-    currentMessages.add(message);
-    final updatedMessages = Map<String, List<ChatMessage>>.from(
-      state.messagesByRoom,
-    );
-    updatedMessages[roomId] = currentMessages;
-    state = state.copyWith(messagesByRoom: updatedMessages);
-
-    _syncServerState();
-    if (state.isHosting) {
-      final server = ref.read(lanChatServerProvider);
-      if (server.isRunning) {
-        server.broadcastMessage(_messageToJson(message));
-      }
-    }
-
-    return message;
-  }
 }
 
 final appStateProvider = NotifierProvider<AppNotifier, AppState>(
@@ -627,12 +407,6 @@ final peersProvider = Provider<UnmodifiableListView<Peer>>(
 
 final transfersProvider = Provider<UnmodifiableListView<FileTransfer>>(
   (ref) => ref.watch(appStateProvider.select((state) => state.transferList)),
-);
-
-final messagesByRoomProvider = Provider.family<List<ChatMessage>, String>(
-  (ref, roomId) => ref.watch(
-    appStateProvider.select((state) => state.messagesForRoom(roomId)),
-  ),
 );
 
 final permissionsProvider = Provider<Set<AppPermission>>(
